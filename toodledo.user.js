@@ -2,7 +2,8 @@
 // @name        Markdown support for Toodledo
 // @description Will render notes in Toodledo according to Markdown syntax.
 // @namespace   http://www.marix.org
-// @include     /https?://www.toodledo.com/notebook/index.php*/
+// @include     https://www.toodledo.com/notebook/index.php*
+// @include     http://www.toodledo.com/notebook/index.php*
 // ==/UserScript==
 
 // Copyright (c) Matthias Bach <marix@marix.org> and the Pagedown authors
@@ -29,7 +30,7 @@ var addMarkdownSupport = function() {
 	var _displayNotebookViewer = origWindow.displayNotebookViewer;
 	origWindow.displayNotebookViewer = function() {
 		var a = parseInt(origWindow.$("#notebook_details").attr("nid"));
-		if(a != 0) {
+		if(a !== 0) {
 			a = origWindow.currentList[a];
 			if(!a.originalText) {
 				a.originalText = a.text;
@@ -121,7 +122,7 @@ var addMarkdownSupport = function() {
             if (original === identity)
                 this[hookname] = func;
             else
-                this[hookname] = function (x) { return func(original(x)); }
+                this[hookname] = function (x) { return func(original(x)); };
         },
         set: function (hookname, func) {
             if (!this[hookname])
@@ -286,7 +287,7 @@ var addMarkdownSupport = function() {
                         // Put back the parenthetical statement we stole.
                         return m3;
                     } else if (m5) {
-                        g_titles.set(m1, m5.replace(/"/g, """));
+                        g_titles.set(m1, m5.replace(/"/g, "&quot;"));
                     }
 
                     // Completely remove the definition from the text
@@ -305,8 +306,8 @@ var addMarkdownSupport = function() {
             // "paragraphs" that are wrapped in non-block-level tags, such as anchors,
             // phrase emphasis, and spans. The list of tags we're looking for is
             // hard-coded:
-            var block_tags_a = "p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del"
-            var block_tags_b = "p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math"
+            var block_tags_a = "p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del";
+            var block_tags_b = "p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math";
 
             // First, look for nested blocks, e.g.:
             //   <div>
@@ -639,8 +640,15 @@ var addMarkdownSupport = function() {
             }
             url = encodeProblemUrlChars(url);
             url = escapeCharacters(url, "*_");
-            var result = "<a href="\">" + link_text + "</a>";
+            var result = "<a href=\"" + url + "\"";
 
+            if (title != "") {
+                title = attributeEncode(title);
+                title = escapeCharacters(title, "*_");
+                result += " title=\"" + title + "\"";
+            }
+
+            result += ">" + link_text + "</a>";
             return result;
         }
 
@@ -706,7 +714,7 @@ var addMarkdownSupport = function() {
         function attributeEncode(text) {
             // unconditionally replace angle brackets here -- what ends up in an attribute (e.g. alt or title)
             // never makes sense to have verbatim HTML in it (and the sanitizer would totally break it)
-            return text.replace(/>/g, ">").replace(/</g, "<").replace(/"/g, """);
+            return text.replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
         }
 
         function writeImageTag(wholeMatch, m1, m2, m3, m4, m5, m6, m7) {
@@ -1090,11 +1098,11 @@ var addMarkdownSupport = function() {
             //
             // Encode all ampersands; HTML entities are not
             // entities within a Markdown code span.
-            text = text.replace(/&/g, "&");
+            text = text.replace(/&/g, "&amp;");
 
             // Do the angle bracket song and dance:
-            text = text.replace(/</g, "<");
-            text = text.replace(/>/g, ">");
+            text = text.replace(/</g, "&lt;");
+            text = text.replace(/>/g, "&gt;");
 
             // Now, escape characters that are magic in Markdown:
             text = escapeCharacters(text, "\*_{}[]\\", false);
@@ -1166,7 +1174,7 @@ var addMarkdownSupport = function() {
                             return pre;
                         });
 
-                    return hashBlock("<blockquote>\n" + bq + "\n</b>");
+                    return hashBlock("<blockquote>\n" + bq + "\n</blockquote>");
                 }
             );
             return text;
@@ -1230,10 +1238,10 @@ var addMarkdownSupport = function() {
 
             // Ampersand-encoding based entirely on Nat Irons's Amputator MT plugin:
             //   http://bumppo.net/projects/amputator/
-            text = text.replace(/&(?!#?[xX]?(?:[0-9a-fA-F]+|\w+);)/g, "&");
+            text = text.replace(/&(?!#?[xX]?(?:[0-9a-fA-F]+|\w+);)/g, "&amp;");
 
             // Encode naked <'s
-            text = text.replace(/<(?![a-z\/?\$!])/gi, "<");
+            text = text.replace(/<(?![a-z\/?\$!])/gi, "&lt;");
 
             return text;
         }
@@ -1270,7 +1278,7 @@ var addMarkdownSupport = function() {
 
             //  autolink anything like <http://example.com>
             
-            var replacer = function (wholematch, m1) { return "<a href="\">" + pluginHooks.plainLinkText(m1) + "</a>"; }
+            var replacer = function (wholematch, m1) { return "<a href=\"" + m1 + "\">" + pluginHooks.plainLinkText(m1) + "</a>"; };
             text = text.replace(/<((https?|ftp):[^'">\s]+)>/gi, replacer);
 
             // Email addresses: <address@domain.foo>
