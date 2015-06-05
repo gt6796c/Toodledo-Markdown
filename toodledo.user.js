@@ -197,16 +197,16 @@ var addMarkdownSupport = function() {
 
             text = pluginHooks.preConversion(text);
 
-            // attacklab: Replace ~ with ~T
+            // attacklab: Replace - with -T
             // This lets us use tilde as an escape char to avoid md5 hashes
             // The choice of character is arbitray; anything that isn't
             // magic in Markdown will work.
-            text = text.replace(/~/g, "~T");
+            text = text.replace(/-/g, "-T");
 
-            // attacklab: Replace $ with ~D
+            // attacklab: Replace $ with -D
             // RegExp interprets $ as a special character
             // when it's in a replacement string
-            text = text.replace(/\$/g, "~D");
+            text = text.replace(/\$/g, "-D");
 
             // Standardize line endings
             text = text.replace(/\r\n/g, "\n"); // DOS to Unix
@@ -235,10 +235,10 @@ var addMarkdownSupport = function() {
             text = _UnescapeSpecialChars(text);
 
             // attacklab: Restore dollar signs
-            text = text.replace(/~D/g, "$$");
+            text = text.replace(/-D/g, "$$");
 
             // attacklab: Restore tildes
-            text = text.replace(/~T/g, "~");
+            text = text.replace(/-T/g, "-");
 
             text = pluginHooks.postConversion(text);
 
@@ -428,8 +428,8 @@ var addMarkdownSupport = function() {
             // strip trailing blank lines
             blockText = blockText.replace(/\n+$/g, "");
 
-            // Replace the element text with a marker ("~KxK" where x is its key)
-            blockText = "\n\n~K" + (g_html_blocks.push(blockText) - 1) + "K\n\n";
+            // Replace the element text with a marker ("-KxK" where x is its key)
+            blockText = "\n\n-K" + (g_html_blocks.push(blockText) - 1) + "K\n\n";
 
             return blockText;
         }
@@ -481,10 +481,10 @@ var addMarkdownSupport = function() {
             // delimiters in inline links like [this](<url>).
             text = _DoAutoLinks(text);
             
-            text = text.replace(/~P/g, "://"); // put in place to prevent autolinking; reset now
+            text = text.replace(/-P/g, "://"); // put in place to prevent autolinking; reset now
             
             text = _EncodeAmpsAndAngles(text);
-            text = _DoItalicsAndBold(text);
+            text = _DoItalicsAndBoldAndStrikes(text);
 
             // Do hard breaks:
             text = text.replace(/  +\n/g, " <br>\n");
@@ -611,7 +611,7 @@ var addMarkdownSupport = function() {
         function writeAnchorTag(wholeMatch, m1, m2, m3, m4, m5, m6, m7) {
             if (m7 == undefined) m7 = "";
             var whole_match = m1;
-            var link_text = m2.replace(/:\/\//g, "~P"); // to prevent auto-linking withing the link. will be converted back after the auto-linker runs
+            var link_text = m2.replace(/:\/\//g, "-P"); // to prevent auto-linking withing the link. will be converted back after the auto-linker runs
             var link_id = m3.toLowerCase();
             var url = m4;
             var title = m7;
@@ -815,7 +815,7 @@ var addMarkdownSupport = function() {
 
             // attacklab: add sentinel to hack around khtml/safari bug:
             // http://bugs.webkit.org/show_bug.cgi?id=11231
-            text += "~0";
+            text += "-0";
 
             // Re-usable pattern to match any entirel ul or ol list:
 
@@ -829,7 +829,7 @@ var addMarkdownSupport = function() {
                     )
                     [^\r]+?
                     (                               // $4
-                        ~0                          // sentinel for workaround; should be $
+                        -0                          // sentinel for workaround; should be $
                         |
                         \n{2,}
                         (?=\S)
@@ -841,7 +841,7 @@ var addMarkdownSupport = function() {
                 )
             /g
             */
-            var whole_list = /^(([ ]{0,3}([*+-]|\d+[.])[ \t]+)[^\r]+?(~0|\n{2,}(?=\S)(?![ \t]*(?:[*+-]|\d+[.])[ \t]+)))/gm;
+            var whole_list = /^(([ ]{0,3}([*+-]|\d+[.])[ \t]+)[^\r]+?(-0|\n{2,}(?=\S)(?![ \t]*(?:[*+-]|\d+[.])[ \t]+)))/gm;
 
             if (g_list_level) {
                 text = text.replace(whole_list, function (wholeMatch, m1, m2) {
@@ -859,7 +859,7 @@ var addMarkdownSupport = function() {
                     return result;
                 });
             } else {
-                whole_list = /(\n\n|^\n?)(([ ]{0,3}([*+-]|\d+[.])[ \t]+)[^\r]+?(~0|\n{2,}(?=\S)(?![ \t]*(?:[*+-]|\d+[.])[ \t]+)))/g;
+                whole_list = /(\n\n|^\n?)(([ ]{0,3}([*+-]|\d+[.])[ \t]+)[^\r]+?(-0|\n{2,}(?=\S)(?![ \t]*(?:[*+-]|\d+[.])[ \t]+)))/g;
                 text = text.replace(whole_list, function (wholeMatch, m1, m2, m3) {
                     var runup = m1;
                     var list = m2;
@@ -872,7 +872,7 @@ var addMarkdownSupport = function() {
             }
 
             // attacklab: strip sentinel
-            text = text.replace(/~0/, "");
+            text = text.replace(/-0/, "");
 
             return text;
         }
@@ -913,7 +913,7 @@ var addMarkdownSupport = function() {
             list_str = list_str.replace(/\n{2,}$/, "\n");
 
             // attacklab: add sentinel to emulate \z
-            list_str += "~0";
+            list_str += "-0";
 
             // In the original attacklab showdown, list_type was not given to this function, and anything
             // that matched /[*+-]|\d+[.]/ would just create the next <li>, causing this mismatch:
@@ -935,13 +935,13 @@ var addMarkdownSupport = function() {
                     (\n+)
                 )
                 (?=
-                    (~0 | \2 ({MARKER}) [ \t]+)
+                    (-0 | \2 ({MARKER}) [ \t]+)
                 )
             /gm, function(){...});
             */
 
             var marker = _listItemMarkers[list_type];
-            var re = new RegExp("(^[ \\t]*)(" + marker + ")[ \\t]+([^\\r]+?(\\n+))(?=(~0|\\1(" + marker + ")[ \\t]+))", "gm");
+            var re = new RegExp("(^[ \\t]*)(" + marker + ")[ \\t]+([^\\r]+?(\\n+))(?=(-0|\\1(" + marker + ")[ \\t]+))", "gm");
             var last_item_had_a_double_newline = false;
             list_str = list_str.replace(re,
                 function (wholeMatch, m1, m2, m3) {
@@ -965,7 +965,7 @@ var addMarkdownSupport = function() {
             );
 
             // attacklab: strip sentinel
-            list_str = list_str.replace(/~0/g, "");
+            list_str = list_str.replace(/-0/g, "");
 
             g_list_level--;
             return list_str;
@@ -977,7 +977,7 @@ var addMarkdownSupport = function() {
             //  
 
             // attacklab: sentinel workarounds for lack of \A and \Z, safari\khtml bug
-            text += "~0";
+            text += "-0";
             /*
             text = text.replace(/
                (?: 
@@ -1006,11 +1006,11 @@ var addMarkdownSupport = function() {
                         .*\n+
                     )+
                 )
-                (\n*[ ]{0,3}[^ \t\n]|(?=~0))    // attacklab: g_tab_width
+                (\n*[ ]{0,3}[^ \t\n]|(?=-0))    // attacklab: g_tab_width
             /g ,function(){...});
             */
 
-            text = text.replace(/(?:\n\n|^)((?:(?:[ ]{4}|\t).*\n+)+)(\n*[ ]{0,3}[^ \t\n]|(?=~0))/g,
+            text = text.replace(/(?:\n\n|^)((?:(?:[ ]{4}|\t).*\n+)+)(\n*[ ]{0,3}[^ \t\n]|(?=-0))/g,
                 function (wholeMatch, m1, m2) {
                     var codeblock = m1;
                     var nextChar = m2;
@@ -1027,14 +1027,14 @@ var addMarkdownSupport = function() {
             );
 
             // attacklab: strip sentinel
-            text = text.replace(/~0/, "");
+            text = text.replace(/-0/, "");
 
             return text;
         }
 
         function hashBlock(text) {
             text = text.replace(/(^\n+|\n+$)/g, "");
-            return "\n\n~K" + (g_html_blocks.push(text) - 1) + "K\n\n";
+            return "\n\n-K" + (g_html_blocks.push(text) - 1) + "K\n\n";
         }
 
         function _DoCodeSpans(text) {
@@ -1082,7 +1082,7 @@ var addMarkdownSupport = function() {
                     c = c.replace(/^([ \t]*)/g, ""); // leading whitespace
                     c = c.replace(/[ \t]*$/g, ""); // trailing whitespace
                     c = _EncodeCode(c);
-                    c = c.replace(/:\/\//g, "~P"); // to prevent auto-linking. Not necessary in code *blocks*, but in code spans. Will be converted back after the auto-linker runs.
+                    c = c.replace(/:\/\//g, "-P"); // to prevent auto-linking. Not necessary in code *blocks*, but in code spans. Will be converted back after the auto-linker runs.
                     return m1 + "<code>" + c + "</code>";
                 }
             );
@@ -1105,7 +1105,7 @@ var addMarkdownSupport = function() {
             text = text.replace(/>/g, "&gt;");
 
             // Now, escape characters that are magic in Markdown:
-            text = escapeCharacters(text, "\*_{}[]\\", false);
+            text = escapeCharacters(text, "\*_{}[]\\~", false);
 
             // jj the line above breaks this:
             //---
@@ -1120,7 +1120,7 @@ var addMarkdownSupport = function() {
             return text;
         }
 
-        function _DoItalicsAndBold(text) {
+        function _DoItalicsAndBoldAndStrikes(text) {
 
             // <strong> must go first:
             text = text.replace(/([\W_]|^)(\*\*|__)(?=\S)([^\r]*?\S[\*_]*)\2([\W_]|$)/g,
@@ -1128,6 +1128,9 @@ var addMarkdownSupport = function() {
 
             text = text.replace(/([\W_]|^)(\*|_)(?=\S)([^\r\*_]*?\S)\2([\W_]|$)/g,
             "$1<em>$3</em>$4");
+
+            text = text.replace(/([\W_]|^)(~~)(?=\S)([^\r]*?\S[~~]*)\2([\W_]|$)/g,
+            "$1<strike>$3</strike>$4");
 
             return text;
         }
@@ -1154,10 +1157,10 @@ var addMarkdownSupport = function() {
                     // attacklab: hack around Konqueror 3.5.4 bug:
                     // "----------bug".replace(/^-/g,"") == "bug"
 
-                    bq = bq.replace(/^[ \t]*>[ \t]?/gm, "~0"); // trim one level of quoting
+                    bq = bq.replace(/^[ \t]*>[ \t]?/gm, "-0"); // trim one level of quoting
 
                     // attacklab: clean up hack
-                    bq = bq.replace(/~0/g, "");
+                    bq = bq.replace(/-0/g, "");
 
                     bq = bq.replace(/^[ \t]+$/gm, "");     // trim whitespace-only lines
                     bq = _RunBlockGamut(bq);             // recurse
@@ -1169,8 +1172,8 @@ var addMarkdownSupport = function() {
                         function (wholeMatch, m1) {
                             var pre = m1;
                             // attacklab: hack around Konqueror 3.5.4 bug:
-                            pre = pre.replace(/^  /mg, "~0");
-                            pre = pre.replace(/~0/g, "");
+                            pre = pre.replace(/^  /mg, "-0");
+                            pre = pre.replace(/-0/g, "");
                             return pre;
                         });
 
@@ -1193,7 +1196,7 @@ var addMarkdownSupport = function() {
             var grafs = text.split(/\n{2,}/g);
             var grafsOut = [];
             
-            var markerRe = /~K(\d+)K/;
+            var markerRe = /-K(\d+)K/;
 
             //
             // Wrap <p> tags.
@@ -1223,7 +1226,7 @@ var addMarkdownSupport = function() {
                     var foundAny = true;
                     while (foundAny) { // we may need several runs, since the data may be nested
                         foundAny = false;
-                        grafsOut[i] = grafsOut[i].replace(/~K(\d+)K/g, function (wholeMatch, id) {
+                        grafsOut[i] = grafsOut[i].replace(/-K(\d+)K/g, function (wholeMatch, id) {
                             foundAny = true;
                             return g_html_blocks[id];
                         });
@@ -1309,7 +1312,7 @@ var addMarkdownSupport = function() {
             //
             // Swap back in all the special characters we've hidden.
             //
-            text = text.replace(/~E(\d+)E/g,
+            text = text.replace(/-E(\d+)E/g,
                 function (wholeMatch, m1) {
                     var charCodeToReplace = parseInt(m1);
                     return String.fromCharCode(charCodeToReplace);
@@ -1334,10 +1337,10 @@ var addMarkdownSupport = function() {
             // attacklab: hack around Konqueror 3.5.4 bug:
             // "----------bug".replace(/^-/g,"") == "bug"
 
-            text = text.replace(/^(\t|[ ]{1,4})/gm, "~0"); // attacklab: g_tab_width
+            text = text.replace(/^(\t|[ ]{1,4})/gm, "-0"); // attacklab: g_tab_width
 
             // attacklab: clean up hack
-            text = text.replace(/~0/g, "")
+            text = text.replace(/-0/g, "")
 
             return text;
         }
@@ -1365,7 +1368,7 @@ var addMarkdownSupport = function() {
         //  attacklab: Utility functions
         //
 
-        var _problemUrlChars = /(?:["'*()[\]:]|~D)/g;
+        var _problemUrlChars = /(?:["'*()[\]:]|-D)/g;
 
         // hex-encodes some unusual "problem" chars in URLs to avoid URL detection problems 
         function encodeProblemUrlChars(url) {
@@ -1375,7 +1378,7 @@ var addMarkdownSupport = function() {
             var len = url.length;
 
             return url.replace(_problemUrlChars, function (match, offset) {
-                if (match == "~D") // escape for dollar
+                if (match == "-D") // escape for dollar
                     return "%24";
                 if (match == ":") {
                     if (offset == len - 1 || /[0-9\/]/.test(url.charAt(offset + 1)))
@@ -1404,7 +1407,7 @@ var addMarkdownSupport = function() {
 
         function escapeCharacters_callback(wholeMatch, m1) {
             var charCodeToEscape = m1.charCodeAt(0);
-            return "~E" + charCodeToEscape + "E";
+            return "-E" + charCodeToEscape + "E";
         }
 
     }; // end of the Markdown.Converter constructor
